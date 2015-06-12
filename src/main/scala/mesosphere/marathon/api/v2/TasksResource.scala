@@ -6,9 +6,11 @@ import javax.ws.rs._
 import javax.ws.rs.core.{ MediaType, Response }
 
 import com.codahale.metrics.annotation.Timed
+import mesosphere.marathon.Protos.MarathonTask
 import mesosphere.marathon.api.v2.json.EnrichedTask
 import mesosphere.marathon.api.{ EndpointsHelper, RestResource }
 import mesosphere.marathon.health.HealthCheckManager
+import mesosphere.marathon.state.{ TaskKiller, GroupManager }
 import mesosphere.marathon.tasks.{ TaskIdUtil, TaskTracker }
 import mesosphere.marathon.{ BadRequestException, MarathonConf, MarathonSchedulerService }
 import org.apache.log4j.Logger
@@ -21,9 +23,11 @@ import scala.collection.JavaConverters._
 @Path("v2/tasks")
 class TasksResource @Inject() (
     service: MarathonSchedulerService,
-    healthCheckManager: HealthCheckManager,
     taskTracker: TaskTracker,
+    taskKiller: TaskKiller,
     val config: MarathonConf,
+    groupManager: GroupManager,
+    healthCheckManager: HealthCheckManager,
     taskIdUtil: TaskIdUtil) extends RestResource {
 
   val log = Logger.getLogger(getClass.getName)
@@ -90,7 +94,7 @@ class TasksResource @Inject() (
   def killTasks(
     @QueryParam("scale")@DefaultValue("false") scale: Boolean,
     body: Array[Byte]): Response = {
-    val taskIds = (Json.parse(body) \ "ids").as[Seq[String]]
+    val taskIds = (Json.parse(body) \ "ids").as[Set[String]]
 
     val groupedTasks = taskIds.flatMap { taskId =>
       val appId = try {
@@ -107,7 +111,11 @@ class TasksResource @Inject() (
 
     groupedTasks.foreach {
       case (appId, tasks) =>
-        service.killTasks(appId, tasks, scale)
+        def findToKill(appTasks: Set[MarathonTask]) = tasks.toSet
+        def responseForTasks(killRequested: TaskKiller.KillRequested): Response = Response.ok().build()
+
+        import scala.concurrent.ExecutionContext.Implicits.global
+        result(taskKiller.kill(appId, findToKill, scale).map(responseForKill(responseForTasks)))
     }
 
     Response.ok().build()

@@ -30,6 +30,7 @@ class AppsResource @Inject() (
     @Named(EventModule.busName) eventBus: EventStream,
     service: MarathonSchedulerService,
     taskTracker: TaskTracker,
+    taskKiller: TaskKiller,
     healthCheckManager: HealthCheckManager,
     taskFailureRepository: TaskFailureRepository,
     val config: MarathonConf,
@@ -260,7 +261,7 @@ class AppsResource @Inject() (
 
   @Path("{appId:.+}/tasks")
   def appTasksResource(): AppTasksResource =
-    new AppTasksResource(service, taskTracker, healthCheckManager, config, groupManager)
+    new AppTasksResource(service, taskTracker, taskKiller, healthCheckManager, config, groupManager)
 
   @Path("{appId:.+}/versions")
   def appVersionsResource(): AppVersionsResource = new AppVersionsResource(service, config)

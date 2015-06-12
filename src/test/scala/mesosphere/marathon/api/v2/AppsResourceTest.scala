@@ -18,6 +18,7 @@ class AppsResourceTest extends MarathonSpec with Matchers {
   var eventBus: EventStream = _
   var service: MarathonSchedulerService = _
   var taskTracker: TaskTracker = _
+  var taskKiller: TaskKiller = _
   var healthCheckManager: HealthCheckManager = _
   var taskFailureRepo: TaskFailureRepository = _
   var config: MarathonConf = _
@@ -28,6 +29,7 @@ class AppsResourceTest extends MarathonSpec with Matchers {
     eventBus = mock[EventStream]
     service = mock[MarathonSchedulerService]
     taskTracker = mock[TaskTracker]
+    taskKiller = mock[TaskKiller]
     healthCheckManager = mock[HealthCheckManager]
     taskFailureRepo = mock[TaskFailureRepository]
     config = mock[MarathonConf]
@@ -36,6 +38,7 @@ class AppsResourceTest extends MarathonSpec with Matchers {
       eventBus,
       service,
       taskTracker,
+      taskKiller,
       healthCheckManager,
       taskFailureRepo,
       config,

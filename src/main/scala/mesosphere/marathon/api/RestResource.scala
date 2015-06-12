@@ -9,7 +9,7 @@ import scala.concurrent.{ Await, Awaitable }
 
 import mesosphere.marathon.api.v2.json.Formats._
 import mesosphere.marathon.MarathonConf
-import mesosphere.marathon.state.{ PathId, Timestamp }
+import mesosphere.marathon.state.{ TaskKiller, PathId, Timestamp }
 import mesosphere.marathon.upgrade.DeploymentPlan
 
 trait RestResource {
@@ -24,6 +24,12 @@ trait RestResource {
 
   protected def unknownApp(id: PathId, version: Option[Timestamp] = None): Response = {
     notFound(s"App '$id' does not exist" + version.fold("")(v => s" in version $v"))
+  }
+
+  protected def responseForKill(respond: TaskKiller.KillRequested => Response): TaskKiller.KillResponse => Response = {
+    case TaskKiller.AppNotFound(appId)           => unknownApp(appId)
+    case TaskKiller.GroupNotFound(groupId)       => unknownGroup(groupId)
+    case killRequested: TaskKiller.KillRequested => respond(killRequested)
   }
 
   protected def notFound(message: String): Response = {
