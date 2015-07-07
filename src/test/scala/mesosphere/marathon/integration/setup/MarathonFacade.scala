@@ -240,7 +240,7 @@ class MarathonFacade(url: String, baseGroup: PathId, waitTime: Duration = 30.sec
   }
 
   //leader ----------------------------------------------
-  def leader(): RestResult[LeaderResult] = {
+  def leader: RestResult[LeaderResult] = {
     val pipeline = sendReceive ~> read[LeaderResult]
     result(pipeline(Get(s"$url/v2/leader")), waitTime)
   }
