@@ -157,10 +157,13 @@ object Constraints {
     var toKillTasks = Set.empty[MarathonTask]
     var flag = true
     while (flag && toKillTasks.size != toKillCount) {
-      val tried =
-        distributions.toSeq.sortBy(_.distributionDifference(toKillTasks)).reverseIterator //highest diff first
-          .flatMap(_.selectTaskToKill(toKillTasks)) ++ //select all tasks to kill
-          runningTasks.iterator.filterNot(toKillTasks.contains) // fallback: add all tasks not visited
+      val tried = distributions
+          //sort all distributions in descending order based on distribution difference
+          .toSeq.sortBy(_.distributionDifference(toKillTasks)).reverseIterator
+          //select tasks to kill (without already selected ones)
+          .flatMap(_.tasksToKillIterator(toKillTasks)) ++
+          //fallback: if the distributions did not select a task, choose one of the not chosen ones
+          runningTasks.iterator.filterNot(toKillTasks.contains)
 
       tried.find(tryTask => distributions.forall(_.isMoreEvenWithout(toKillTasks + tryTask))) match {
         case Some(task) => toKillTasks += task
@@ -194,10 +197,10 @@ object Constraints {
       diffAfterKill <= 1 || distributionDifference() > diffAfterKill
     }
 
-    def selectTaskToKill(without: Set[MarathonTask], butNot: Set[MarathonTask] = Set.empty): Iterator[MarathonTask] = {
+    def tasksToKillIterator(without: Set[MarathonTask]): Iterator[MarathonTask] = {
       val updated = distribution.map(_ -- without).groupBy(_.size)
       if (updated.size == 1) /* even distributed */ Iterator.empty else {
-        updated.maxBy(_._1)._2.iterator.map(_ -- butNot).flatten
+        updated.maxBy(_._1)._2.iterator.flatten
       }
     }
 
